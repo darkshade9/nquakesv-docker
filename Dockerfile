@@ -1,20 +1,4 @@
-FROM ubuntu:18.04 as build
-ARG DEBIAN_FRONTEND=noninteractive
-WORKDIR /build
-
-# Install prerequisites
-RUN apt-get update && apt-get install -y --no-install-recommends apt-utils \
-  && apt-get install -y curl gcc git libc6-dev make meson pkg-config
-
-# Build mvdsv
-RUN git clone https://github.com/deurk/mvdsv.git && cd mvdsv \
-  && ./configure && make
-
-# Build ktx
-RUN git clone https://github.com/deurk/ktx.git && cd ktx \
-  && meson build && ninja -C build
-
-FROM ubuntu:18.04 as run
+FROM ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /nquake
 
@@ -25,8 +9,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends apt-utils \
 
 # Copy files
 COPY files .
-COPY --from=build /build/mvdsv/mvdsv /nquake/mvdsv
-COPY --from=build /build/ktx/build/qwprogs.so /nquake/ktx/qwprogs.so
+
+RUN wget https://github.com/QW-Group/ktx/releases/download/1.45/qwprogs-linux-aarch64.zip && unzip qwprogs-linux-aarch64.zip
+RUN wget https://github.com/QW-Group/mvdsv/releases/download/1.11/mvdsv_linux_arm64
+
+RUN mv mvdsv_linux_arm64 /nquake/mvdsv
+RUN mv qwprogs.so /nquake/ktx/qwprogs.so
+
 COPY scripts/healthcheck.sh /healthcheck.sh
 COPY scripts/entrypoint.sh /entrypoint.sh
 
